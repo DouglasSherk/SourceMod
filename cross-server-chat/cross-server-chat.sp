@@ -82,7 +82,7 @@ public OnPluginStart()
   AddCommandListener(Command_Say, "say");
 
   g_Hostname = FindConVar("hostname");
-  g_RequestHost = CreateConvar("sm_csc_host", DEFAULT_HOST, "Hostname for the master server Python script");
+  g_RequestHost = CreateConVar("sm_csc_host", DEFAULT_HOST, "Hostname for the master server Python script");
   g_Prefix = CreateConVar("sm_csc_prefix", "", "Prefix symbol for cross-server chat messages");
 }
 
