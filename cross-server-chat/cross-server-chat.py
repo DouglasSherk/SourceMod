@@ -3,7 +3,7 @@ import BaseHTTPServer
 import urlparse
 import urllib
 
-HOST_NAME = 'YOURHOSTNAME.COM'
+HOST_NAME = 'YOURHOSTNAME.com'
 PORT_NUMBER = 8000
 
 request_times = {}
