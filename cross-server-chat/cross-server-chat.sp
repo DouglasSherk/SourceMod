@@ -1,6 +1,7 @@
 /**
  * Cross-Server Chat by Hawk552
  * Last update: Jan 6, 2014
+ * Plugin thread: https://forums.alliedmods.net/showthread.php?p=2082210
  *
  * Description
  *  This plugin and Python script allows you to chat between any number of
@@ -49,6 +50,9 @@
  * Changelog
  *  1.0   Jan 6, 2014
  *   * Initial version
+ *
+ * On GitHub
+ *  https://github.com/DouglasSherk/SourceMod/tree/master/cross-server-chat
  */
 
 #pragma semicolon 1
