@@ -1,6 +1,6 @@
 /**
  * Cross-Server Chat by Hawk552
- * Last update: Jan 6, 2014
+ * Last update: Jan 9, 2014
  * Plugin thread: https://forums.alliedmods.net/showthread.php?p=2082210
  *
  * Description
@@ -29,6 +29,9 @@
  *    messages. A blank prefix means that all messages are networked. An
  *    example prefix is "#", which would mean that all messages that you want
  *    networked must be of the format "#message", e.g. "#hi hawk".
+ *  * sm_csc_admin_only (string) (def. "0") - Whether or not cross-server
+ *    chat should be restricted to admins only. For this to be "1",
+ *    sm_csc_prefix must also be set to something non-blank (e.g. "#").
  *
  * Installation
  *  1. Install the SteamTools extension, if you haven't already.
@@ -42,14 +45,17 @@
  *        HOST_NAME = 'YOURHOSTNAME.com'
  *        PORT_NUMBER = 8000
  *     3. Run it by typing |python cross-server-chat.py|.
- *        You may consider running it in a Screen session so that it doesn't
- *        get terminated when you close the terminal.
+ *        You may consider running it in a Screen session or as a daemon so
+ *        that it doesn't get terminated when you close the terminal.
  *        http://www.gnu.org/software/screen/manual/screen.html
  *  4. Restart the game server(s).
  *
  * Changelog
  *  1.0   Jan 6, 2014
- *   * Initial version
+ *   * Initial version.
+ *  1.1   Jan 9, 2014
+ *   * Added sm_csc_admin_only cvar.
+ *   * Added chat flooding detection for non-admins.
  *
  * On GitHub
  *  https://github.com/DouglasSherk/SourceMod/tree/master/cross-server-chat
@@ -68,16 +74,20 @@
 new String:g_Messages[MAX_MESSAGES][MAX_MESSAGE_LEN];
 new g_MessagesNum;
 
+new Float:g_LastMessage[33];
+
 new Handle:g_Hostname;
+new Handle:g_FloodTime;
 new Handle:g_RequestHost;
 new Handle:g_Prefix;
+new Handle:g_AdminOnly;
 
 public Plugin:myinfo =
 {
 	name = "Cross-Server Chat",
 	author = "Hawk552",
 	description = "Networked chat between any number of servers.",
-	version = "1.0",
+	version = "1.1",
 	url = "http://hawkscatacombs.com"
 }
 
@@ -86,8 +96,11 @@ public OnPluginStart()
   AddCommandListener(Command_Say, "say");
 
   g_Hostname = FindConVar("hostname");
+  g_FloodTime = FindConVar("sm_flood_time");
+
   g_RequestHost = CreateConVar("sm_csc_host", DEFAULT_HOST, "Hostname for the master server Python script");
   g_Prefix = CreateConVar("sm_csc_prefix", "", "Prefix symbol for cross-server chat messages");
+  g_AdminOnly = CreateConVar("sm_csc_admin_only", "0", "Limit cross-server chat with prefix to admins");
 }
 
 public Steam_FullyLoaded()
@@ -164,6 +177,7 @@ public Action:Command_Say(client, const String:command[], argc)
 {
   decl String:text[MAX_MESSAGE_LEN];
   new startIndex = 0;
+
   if (GetCmdArgString(text, sizeof(text)) < 1) {
     return Plugin_Continue;
   }
@@ -177,7 +191,20 @@ public Action:Command_Say(client, const String:command[], argc)
   GetConVarString(g_Prefix, prefix, sizeof(prefix));
   new prefixLen = strlen(prefix);
 
-  if (strncmp(text[startIndex], prefix, prefixLen) == 0) {
+  new bool:clientHasAdmin = !!(GetUserFlagBits(client) & ADMFLAG_CHAT);
+
+  if (strncmp(text[startIndex], prefix, prefixLen) == 0 &&
+      (prefixLen == 0 || (GetConVarBool(g_AdminOnly) && clientHasAdmin))) {
+    if (!clientHasAdmin) {
+      new Float:time = GetGameTime(), Float:lastMessage = g_LastMessage[client];
+
+      g_LastMessage[client] = time;
+
+      if (time - lastMessage < GetConVarFloat(g_FloodTime)) {
+        return Plugin_Handled;
+      }
+    }
+
     // Ignore the prefix.
     startIndex += prefixLen;
 
